@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Telegram Mini Self Earning App</title>
+  
+  <script src="https://zunex.icu/cdn/ads.js?app_uid=2631"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.2.0/css/all.min.css">
+  
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap');
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Roboto', sans-serif;
+      background: #f0f2f5;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 15px;
+    }
+
+    .app {
+      background: #ffffff;
+      width: 100%;
+      max-width: 380px;
+      border-radius: 12px;
+      padding: 30px 20px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+      text-align: center;
+    }
+
+    .app-header h1 {
+      font-size: 26px;
+      font-weight: 700;
+      color: #007bff;
+      line-height: 1.3;
+      margin-bottom: 10px;
+    }
+
+    .app-subtitle {
+      font-size: 14px;
+      color: #333;
+      margin-bottom: 25px;
+      font-weight: 500;
+    }
+
+    .stats-container {
+      background: #e9ecef;
+      border-radius: 10px;
+      padding: 20px 10px;
+      display: flex;
+      justify-content: space-around;
+      align-items: center;
+      margin-bottom: 25px;
+    }
+
+    .stat-box { flex: 1; text-align: center; }
+
+    .stat-value {
+      font-size: 24px;
+      font-weight: bold;
+      color: #28a745;
+      display: block;
+      margin-bottom: 5px;
+    }
+
+    .stat-label { font-size: 14px; color: #6c757d; }
+
+    .btn-main, .reset-btn {
+      width: 100%;
+      padding: 14px;
+      border: none;
+      border-radius: 8px;
+      font-size: 16px;
+      font-weight: 500;
+      cursor: pointer;
+      color: white;
+      transition: opacity 0.2s;
+      margin-bottom: 15px;
+      display: block;
+    }
+
+    .btn-main { background: #007bff; }
+    .btn-main:active { opacity: 0.8; }
+
+    .reset-btn { background: #dc3545; margin-bottom: 0; }
+    .reset-btn:active { opacity: 0.8; }
+
+    .dev-link { text-decoration: none; color: inherit; }
+    .hidden-stat { display: none; }
+  </style>
+</head>
+<body oncontextmenu="return false;">
+  
+  <div class="app">
+    <div class="app-header">
+      <h1>Telegram Mini<br>Self Earning App</h1>
+      <div class="app-subtitle">
+        <a href="https://t.me/imranuniquetech" target="_blank" class="dev-link">
+          Developed By A M IMRAN
+        </a>
+      </div>
+    </div>
+    
+    <div class="stats-container">
+      <div class="stat-box">
+        <span class="stat-value" id="adsWatched">0</span>
+        <span class="stat-label">Completed Ads</span>
+      </div>
+      
+      <div class="stat-box">
+        <span class="stat-value" id="incomeEarned">0</span> 
+        <span class="stat-label">Total Points</span>
+      </div>
+    </div>
+
+    <div class="hidden-stat" id="totalEarningStat"></div>
+    
+    <button class="btn-main" id="reward-btn">
+      Reward Interstitial
+    </button>
+    
+    <button class="reset-btn" id="reset-btn">
+      Reset Count
+    </button>
+  </div>
+
+  <script>
+    let points = parseInt(localStorage.getItem('userPoints')) || 0;
+    let balance = parseFloat(localStorage.getItem('userBalance')) || 0.00;
+
+    const adsWatchedEl = document.getElementById('adsWatched');
+    const incomeEarnedEl = document.getElementById('incomeEarned');
+    const totalEarningStatEl = document.getElementById('totalEarningStat'); 
+    const rewardBtn = document.getElementById('reward-btn');
+    const resetBtn = document.getElementById('reset-btn');
+
+    function updateDisplay() {
+      adsWatchedEl.textContent = points;
+      incomeEarnedEl.textContent = '৳' + balance.toFixed(2);
+      if(totalEarningStatEl) totalEarningStatEl.textContent = '৳' + balance.toFixed(2);
+    }
+
+    function animateBalance() {
+      incomeEarnedEl.style.transform = "scale(1.2)";
+      setTimeout(() => {
+        incomeEarnedEl.style.transform = "scale(1)";
+      }, 300);
+    }
+
+    // --- মেইন আপডেট করা অংশ ---
+    rewardBtn.addEventListener('click', () => {
+      // চেক করা হচ্ছে নতুন ফাংশনটি লোড হয়েছে কিনা
+      if (typeof window.showAdsovio === 'function') {
+        
+        // নতুন ফাংশন কল করা হচ্ছে
+        window.showAdsovio()
+          .then(() => {
+            // ✅ সফলভাবে অ্যাড দেখার পর রিওয়ার্ড দেওয়া হচ্ছে
+            points += 1;
+            balance += 0.008;
+            localStorage.setItem('userPoints', points);
+            localStorage.setItem('userBalance', balance.toFixed(2));
+            updateDisplay();
+            animateBalance();
+            
+            console.log('Ad completed! Reward granted.');
+            Swal.fire({
+              toast: true,
+              icon: 'success',
+              position: 'top-end',
+              title: 'অভিনন্দন! আয় যোগ হয়েছে।',
+              showConfirmButton: false,
+              timer: 3000,
+              background: '#fff', 
+              color: '#000'
+            });
+          })
+          .catch((e) => {
+            // ❌ এরর হ্যান্ডলিং
+            console.error('Ad failed:', e);
+            Swal.fire({
+              toast: true,
+              icon: 'error',
+              position: 'top-end',
+              title: 'বিজ্ঞাপন বাতিল করা হয়েছে।',
+              showConfirmButton: false,
+              timer: 3000,
+              background: '#fff',
+              color: '#d33'
+            });
+          });
+
+      } else {
+        // যদি স্ক্রিপ্ট লোড না হয়
+        Swal.fire({
+          icon: 'warning',
+          title: 'সতর্কতা',
+          text: 'অ্যাড স্ক্রিপ্ট লোড হয়নি, দয়া করে ইন্টারনেট চেক করুন বা রিফ্রেশ দিন।',
+          confirmButtonText: 'ঠিক আছে',
+          background: '#fff',
+          color: '#000'
+        });
+      }
+    });
+
+    resetBtn.addEventListener('click', () => {
+      Swal.fire({
+        title: 'আপনি কি রিসেট করতে চান?',
+        text: 'পয়েন্ট রিসেট হবে, ইনকাম থাকবে।',
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonText: 'হ্যাঁ',
+        cancelButtonText: 'না',
+        background: '#fff',
+        color: '#000',
+        confirmButtonColor: '#007bff',
+        cancelButtonColor: '#dc3545'
+      }).then(result => {
+        if (result.isConfirmed) {
+          points = 0;
+          localStorage.removeItem('userPoints');
+          updateDisplay();
+          
+          Swal.fire({
+            toast: true,
+            icon: 'success',
+            position: 'top-end',
+            title: 'সফলভাবে রিসেট হয়েছে!',
+            showConfirmButton: false,
+            timer: 3000,
+            background: '#fff',
+            color: '#28a745'
+          });
+        }
+      });
+    });
+
+    document.addEventListener('DOMContentLoaded', () => {
+      updateDisplay();
+      document.querySelector('.app').style.opacity = '0';
+      document.querySelector('.app').style.transform = 'translateY(20px)';
+      document.querySelector('.app').style.transition = 'all 0.5s ease';
+      
+      setTimeout(() => {
+        document.querySelector('.app').style.opacity = '1';
+        document.querySelector('.app').style.transform = 'translateY(0)';
+      }, 100);
+    });
+  </script>
+</body>
+</html>
