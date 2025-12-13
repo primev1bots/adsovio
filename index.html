@@ -67,14 +67,14 @@
         </div>
         
         <div class="bg-gray-50 p-4 text-center border-t border-gray-100">
-            <p class="text-xs text-gray-400">Powered by Adsgram</p>
+            <p class="text-xs text-gray-400">Powered by Adsgram • ID: int-19079</p>
         </div>
     </div>
 
     <script>
         // --- Configuration ---
         const CONFIG = {
-            blockId: "int-19079", // <--- Adsgram Dashboard থেকে Block ID এখানে বসাও (যেমন: "int-123456")
+            blockId: "int-19079", // তোমার দেওয়া ID সেট করা হয়েছে
             rewardAmount: 0.008, 
             storageKeyPoints: 'adsgram_points',
             storageKeyBalance: 'adsgram_balance'
@@ -151,20 +151,21 @@
 
             setLoading(true);
 
-            // Initialize Adsgram Controller
+            // Initialize Adsgram Controller with your ID
             const AdController = window.Adsgram.init({ blockId: CONFIG.blockId });
 
             // Show Ad
             AdController.show().then((result) => {
                 // User watched the ad successfully
+                console.log('Ad finished:', result);
                 handleReward();
             }).catch((result) => {
                 // User skipped or Error occurred
-                console.error("Adsgram Error:", result);
+                console.error("Adsgram Error/Skip:", result);
                 
                 // result.done indicates if user finished watching
                 let msg = 'You skipped the ad.';
-                if(result.description) {
+                if(result && result.description) {
                     msg = result.description;
                 }
 
