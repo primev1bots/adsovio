@@ -3,114 +3,193 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Adsgram Final Fix</title>
-
-    <meta http-equiv="Content-Security-Policy" content="default-src * 'unsafe-inline' 'unsafe-eval' data: blob:;">
-
-    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <title>Adsgram Rewards</title>
 
     <script src="https://cdn.tailwindcss.com"></script>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+
+    <script src="https://api.adsgram.ai/js/sdk.js" onload="onSdkLoaded()" onerror="onSdkFailed()" async></script>
 
     <style>
-        body { background: #f0f2f5; font-family: sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; margin: 0; }
-        .card { background: white; padding: 30px; border-radius: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); width: 90%; max-width: 400px; text-align: center; }
-        .btn { background: #007aff; color: white; padding: 15px; border-radius: 12px; width: 100%; font-weight: bold; border: none; font-size: 16px; margin-top: 20px; cursor: pointer; }
-        .btn:disabled { background: #ccc; cursor: not-allowed; }
-        .status { margin-top: 10px; font-size: 12px; color: #666; }
-        .error { color: red; font-weight: bold; }
-        .success { color: green; font-weight: bold; }
+        body { font-family: 'Inter', sans-serif; -webkit-tap-highlight-color: transparent; }
+        
+        /* Smooth fade in */
+        .fade-in { animation: fadeIn 0.5s ease-in; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
     </style>
 </head>
-<body>
+<body class="bg-slate-100 min-h-screen flex items-center justify-center p-4 selection:bg-indigo-100">
 
-    <div class="card">
-        <h1 class="text-2xl font-bold mb-2">Reward Task</h1>
-        <p class="text-gray-500">Watch ad to support us</p>
+    <div class="w-full max-w-md bg-white rounded-3xl shadow-xl overflow-hidden border border-slate-200 fade-in">
         
-        <div id="debugArea" class="mt-4 p-2 bg-gray-100 text-xs text-left rounded hidden">
-            Debug Log: <br><span id="logs"></span>
+        <div class="bg-indigo-600 p-8 text-center relative">
+            <div class="absolute inset-0 opacity-10 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')]"></div>
+            <h1 class="text-2xl font-bold text-white relative z-10">Daily Rewards</h1>
+            <p class="text-indigo-200 text-sm mt-1 relative z-10">Earn money by watching ads</p>
         </div>
 
-        <button id="adBtn" onclick="showAd()" class="btn">
-            Wait, Loading System...
-        </button>
+        <div class="p-6 space-y-6">
+            
+            <div class="bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl p-5 text-white shadow-lg relative overflow-hidden">
+                <div class="flex justify-between items-center relative z-10">
+                    <div>
+                        <p class="text-xs font-medium text-indigo-100 uppercase tracking-wider">Your Balance</p>
+                        <h2 class="text-3xl font-bold mt-1 tracking-tight" id="balanceDisplay">৳0.00</h2>
+                    </div>
+                    <div class="h-12 w-12 bg-white/20 rounded-full flex items-center justify-center backdrop-blur-md border border-white/10">
+                        <i class="fa-solid fa-wallet text-xl"></i>
+                    </div>
+                </div>
+            </div>
 
-        <p id="statusMsg" class="status">Initializing...</p>
+            <div class="grid grid-cols-2 gap-4">
+                <div class="bg-slate-50 p-4 rounded-xl border border-slate-100 text-center">
+                    <p class="text-slate-500 text-xs font-medium mb-1 uppercase">Watched</p>
+                    <p class="text-xl font-bold text-slate-800" id="pointsDisplay">0</p>
+                </div>
+                <div class="bg-slate-50 p-4 rounded-xl border border-slate-100 text-center">
+                    <p class="text-slate-500 text-xs font-medium mb-1 uppercase">Network</p>
+                    <div id="networkStatus" class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-yellow-100 text-yellow-700 text-xs font-bold">
+                        <span class="w-1.5 h-1.5 bg-yellow-500 rounded-full animate-pulse"></span>
+                        Loading...
+                    </div>
+                </div>
+            </div>
+
+            <button id="adBtn" disabled onclick="showRewardAd()" class="group w-full bg-slate-300 text-white font-semibold py-4 px-6 rounded-xl transition-all duration-300 shadow-sm flex items-center justify-center gap-3 disabled:cursor-not-allowed transform active:scale-95">
+                <div id="btnLoader" class="animate-spin h-5 w-5 border-2 border-white border-t-transparent rounded-full"></div>
+                <span id="btnIcon" class="hidden group-hover:scale-110 transition-transform"><i class="fa-solid fa-play"></i></span>
+                <span id="btnText">Connecting to Server...</span>
+            </button>
+
+        </div>
+        
+        <div class="bg-slate-50 p-4 text-center border-t border-slate-100">
+        </div>
     </div>
 
     <script>
-        const BLOCK_ID = "int-19079"; 
-        const btn = document.getElementById('adBtn');
-        const msg = document.getElementById('statusMsg');
-        const logs = document.getElementById('logs');
-
-        function log(text) {
-            logs.innerHTML += text + "<br>";
-            console.log(text);
-        }
-
-        // ম্যানুয়ালি স্ক্রিপ্ট লোড করার ফাংশন (Back up plan)
-        function loadSdk() {
-            log("Loading SDK...");
-            const script = document.createElement('script');
-            script.src = "https://api.adsgram.ai/js/sdk.js?v=" + new Date().getTime(); // Cache busting
-            script.async = true;
-            
-            script.onload = () => {
-                log("SDK Loaded via JS ✅");
-                btn.textContent = "Watch Video Ad";
-                btn.disabled = false; // Enable button
-                msg.textContent = "Ready to earn!";
-                msg.className = "status success";
-            };
-
-            script.onerror = () => {
-                log("SDK Load Failed ❌");
-                btn.textContent = "System Error";
-                msg.textContent = "Internet Blocked Adsgram. Try VPN.";
-                msg.className = "status error";
-                document.getElementById('debugArea').classList.remove('hidden');
-            };
-
-            document.head.appendChild(script);
-        }
-
-        // পেইজ লোড হলে SDK কল হবে
-        window.onload = () => {
-            if(window.Telegram && window.Telegram.WebApp) {
-                window.Telegram.WebApp.ready();
-                window.Telegram.WebApp.expand();
-            }
-            loadSdk();
+        const CONFIG = {
+            blockId: "int-19079",
+            reward: 0.008,        
         };
 
-        async function showAd() {
-            if (!window.Adsgram) {
-                Swal.fire("Error", "Network error. SDK failed to load.", "error");
+        let userBalance = parseFloat(localStorage.getItem('ads_balance')) || 0.00;
+        let adCount = parseInt(localStorage.getItem('ads_count')) || 0;
+        let isSdkReady = false;
+
+        const ui = {
+            balance: document.getElementById('balanceDisplay'),
+            points: document.getElementById('pointsDisplay'),
+            btn: document.getElementById('adBtn'),
+            btnText: document.getElementById('btnText'),
+            btnIcon: document.getElementById('btnIcon'),
+            btnLoader: document.getElementById('btnLoader'),
+            status: document.getElementById('networkStatus')
+        };
+
+        function updateUI() {
+            ui.balance.textContent = '৳' + userBalance.toFixed(3);
+            ui.points.textContent = adCount;
+        }
+
+        function onSdkLoaded() {
+            console.log("Adsgram SDK Loaded!");
+            isSdkReady = true;
+            
+            ui.btn.disabled = false;
+            ui.btn.classList.remove('bg-slate-300', 'text-white');
+            ui.btn.classList.add('bg-indigo-600', 'hover:bg-indigo-700', 'hover:shadow-lg', 'text-white');
+            
+            ui.btnText.textContent = "Watch Video Ad";
+            ui.btnLoader.classList.add('hidden');
+            ui.btnIcon.classList.remove('hidden');
+
+            ui.status.className = "inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-green-100 text-green-700 text-xs font-bold";
+            ui.status.innerHTML = '<span class="w-1.5 h-1.5 bg-green-500 rounded-full"></span> Online';
+        }
+
+        function onSdkFailed() {
+            console.error("Adsgram SDK Failed!");
+            ui.btnText.textContent = "Connection Failed (Retry)";
+            ui.btnLoader.classList.add('hidden');
+            ui.btn.onclick = () => window.location.reload();
+            ui.btn.disabled = false;
+            
+            ui.status.className = "inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-red-100 text-red-700 text-xs font-bold";
+            ui.status.innerHTML = '<span class="w-1.5 h-1.5 bg-red-500 rounded-full"></span> Error';
+        }
+
+        async function showRewardAd() {
+            if (!isSdkReady || !window.Adsgram) {
+                Swal.fire({ icon: 'error', title: 'Wait', text: 'Ad system is loading...' });
                 return;
             }
 
-            btn.disabled = true;
-            btn.textContent = "Playing...";
+            const originalText = ui.btnText.textContent;
+            ui.btn.disabled = true;
+            ui.btnText.textContent = "Loading Ad...";
+            ui.btnLoader.classList.remove('hidden');
+            ui.btnIcon.classList.add('hidden');
 
             try {
-                const AdController = window.Adsgram.init({ blockId: BLOCK_ID, debug: true });
+                const AdController = window.Adsgram.init({ blockId: CONFIG.blockId });
+
                 await AdController.show().then((result) => {
-                    Swal.fire("Success", "Reward Added!", "success");
-                    log("Ad Watched");
+                    userBalance += CONFIG.reward;
+                    adCount += 1;
+                    
+                    localStorage.setItem('ads_balance', userBalance.toFixed(3));
+                    localStorage.setItem('ads_count', adCount);
+                    
+                    updateUI();
+                    
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Reward Added!',
+                        text: `You earned ৳${CONFIG.reward}`,
+                        timer: 2000,
+                        showConfirmButton: false
+                    });
+
                 }).catch((result) => {
-                    Swal.fire("Info", "Ad Skipped/Failed", "info");
-                    log("Ad Error: " + JSON.stringify(result));
+                    console.warn("Ad Result:", result);
+                    let msg = "You skipped the ad.";
+                    
+                    if (result && result.description) {
+                        msg = result.description; 
+                    }
+                    
+                    Swal.fire({
+                        icon: 'warning',
+                        title: 'No Reward',
+                        text: msg,
+                        confirmButtonColor: '#4f46e5'
+                    });
                 });
-            } catch (e) {
-                log("Crash: " + e.message);
-                Swal.fire("Error", "System Crash", "error");
+
+            } catch (error) {
+                console.error("Critical Error:", error);
+                Swal.fire({
+                    icon: 'error',
+                    title: 'System Error',
+                    text: 'Could not load ad configuration.',
+                });
             } finally {
-                btn.disabled = false;
-                btn.textContent = "Watch Video Ad";
+                ui.btn.disabled = false;
+                ui.btnText.textContent = originalText;
+                ui.btnLoader.classList.add('hidden');
+                ui.btnIcon.classList.remove('hidden');
             }
         }
+
+        updateUI();
+
     </script>
 </body>
 </html>
