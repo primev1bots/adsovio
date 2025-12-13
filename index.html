@@ -3,92 +3,112 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Adsgram Debug</title>
-    
+    <title>Adsgram Final Fix</title>
+
+    <meta http-equiv="Content-Security-Policy" content="default-src * 'unsafe-inline' 'unsafe-eval' data: blob:;">
+
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    
-    <script src="https://api.adsgram.ai/js/sdk.js?2024"></script>
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
     <style>
-        body { font-family: monospace; padding: 20px; background: #000; color: #0f0; }
-        .box { border: 1px solid #333; padding: 10px; margin-bottom: 10px; border-radius: 5px; }
-        button { padding: 15px; width: 100%; font-size: 16px; cursor: pointer; background: #222; color: white; border: 1px solid #555; }
-        #logs { font-size: 12px; white-space: pre-wrap; word-break: break-all; color: #fff; }
+        body { background: #f0f2f5; font-family: sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; margin: 0; }
+        .card { background: white; padding: 30px; border-radius: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); width: 90%; max-width: 400px; text-align: center; }
+        .btn { background: #007aff; color: white; padding: 15px; border-radius: 12px; width: 100%; font-weight: bold; border: none; font-size: 16px; margin-top: 20px; cursor: pointer; }
+        .btn:disabled { background: #ccc; cursor: not-allowed; }
+        .status { margin-top: 10px; font-size: 12px; color: #666; }
+        .error { color: red; font-weight: bold; }
+        .success { color: green; font-weight: bold; }
     </style>
 </head>
 <body>
 
-    <h2 style="text-align:center;">DEBUG MODE</h2>
-    
-    <div class="box">
-        <p>Status: <span id="status">Waiting...</span></p>
-        <p>Block ID: int-19079</p>
+    <div class="card">
+        <h1 class="text-2xl font-bold mb-2">Reward Task</h1>
+        <p class="text-gray-500">Watch ad to support us</p>
+        
+        <div id="debugArea" class="mt-4 p-2 bg-gray-100 text-xs text-left rounded hidden">
+            Debug Log: <br><span id="logs"></span>
+        </div>
+
+        <button id="adBtn" onclick="showAd()" class="btn">
+            Wait, Loading System...
+        </button>
+
+        <p id="statusMsg" class="status">Initializing...</p>
     </div>
 
-    <button id="btn" onclick="showAd()">SHOW AD (Click Me)</button>
-
-    <h3>Logs:</h3>
-    <div id="logs" class="box"></div>
-
     <script>
-        // Logger Function (Screen এ এরর দেখার জন্য)
-        function log(msg) {
-            const logBox = document.getElementById('logs');
-            logBox.innerHTML += `> ${msg}\n`;
-            console.log(msg);
+        const BLOCK_ID = "int-19079"; 
+        const btn = document.getElementById('adBtn');
+        const msg = document.getElementById('statusMsg');
+        const logs = document.getElementById('logs');
+
+        function log(text) {
+            logs.innerHTML += text + "<br>";
+            console.log(text);
         }
 
-        const BLOCK_ID = "int-19079"; 
-
-        // 1. Check if Telegram WebApp is ready
-        window.addEventListener('DOMContentLoaded', () => {
-            log("App Loaded.");
+        // ম্যানুয়ালি স্ক্রিপ্ট লোড করার ফাংশন (Back up plan)
+        function loadSdk() {
+            log("Loading SDK...");
+            const script = document.createElement('script');
+            script.src = "https://api.adsgram.ai/js/sdk.js?v=" + new Date().getTime(); // Cache busting
+            script.async = true;
             
-            if (window.Telegram && window.Telegram.WebApp) {
-                log("Telegram WebApp Detected ✅");
+            script.onload = () => {
+                log("SDK Loaded via JS ✅");
+                btn.textContent = "Watch Video Ad";
+                btn.disabled = false; // Enable button
+                msg.textContent = "Ready to earn!";
+                msg.className = "status success";
+            };
+
+            script.onerror = () => {
+                log("SDK Load Failed ❌");
+                btn.textContent = "System Error";
+                msg.textContent = "Internet Blocked Adsgram. Try VPN.";
+                msg.className = "status error";
+                document.getElementById('debugArea').classList.remove('hidden');
+            };
+
+            document.head.appendChild(script);
+        }
+
+        // পেইজ লোড হলে SDK কল হবে
+        window.onload = () => {
+            if(window.Telegram && window.Telegram.WebApp) {
                 window.Telegram.WebApp.ready();
                 window.Telegram.WebApp.expand();
-            } else {
-                log("WARNING: Not in Telegram or WebApp script missing ❌");
             }
-
-            if (window.Adsgram) {
-                log("Adsgram SDK Loaded ✅");
-                document.getElementById('status').innerText = "SDK Ready";
-            } else {
-                log("ERROR: Adsgram SDK NOT Loaded ❌. Check AdBlock/DNS.");
-                document.getElementById('status').innerText = "SDK Failed";
-            }
-        });
+            loadSdk();
+        };
 
         async function showAd() {
-            log("Attempting to show ad...");
-            
             if (!window.Adsgram) {
-                log("STOP: SDK is missing.");
-                alert("SDK Missing!");
+                Swal.fire("Error", "Network error. SDK failed to load.", "error");
                 return;
             }
 
+            btn.disabled = true;
+            btn.textContent = "Playing...";
+
             try {
-                const AdController = window.Adsgram.init({ 
-                    blockId: BLOCK_ID, 
-                    debug: true // Debug mode অন করা হলো
-                });
-
-                log("Controller Initialized. Calling show()...");
-
+                const AdController = window.Adsgram.init({ blockId: BLOCK_ID, debug: true });
                 await AdController.show().then((result) => {
-                    log("SUCCESS: Ad watched!");
-                    alert("Reward Earned!");
+                    Swal.fire("Success", "Reward Added!", "success");
+                    log("Ad Watched");
                 }).catch((result) => {
-                    log("FAILED/SKIPPED: " + JSON.stringify(result));
-                    alert("Failed: " + (result?.description || "Unknown error"));
+                    Swal.fire("Info", "Ad Skipped/Failed", "info");
+                    log("Ad Error: " + JSON.stringify(result));
                 });
-
-            } catch (err) {
-                log("CRITICAL ERROR: " + err.message);
-                alert("System Error: " + err.message);
+            } catch (e) {
+                log("Crash: " + e.message);
+                Swal.fire("Error", "System Crash", "error");
+            } finally {
+                btn.disabled = false;
+                btn.textContent = "Watch Video Ad";
             }
         }
     </script>
