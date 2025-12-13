@@ -3,14 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Adsovio Rewards</title>
+    <title>Adsgram Rewards</title>
 
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
-    <script src="https://zunex.icu/cdn/ads.js?app_uid=2631"></script>
+    <script src="https://api.adsgram.ai/js/sdk.js"></script>
 
     <style>
         body { font-family: 'Inter', sans-serif; }
@@ -26,7 +26,7 @@
         
         <div class="bg-indigo-600 p-6 text-center relative overflow-hidden">
             <div class="absolute top-0 left-0 w-full h-full opacity-10 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')]"></div>
-            <h1 class="text-2xl font-bold text-white relative z-10">Adsovio Demo</h1>
+            <h1 class="text-2xl font-bold text-white relative z-10">Reward Bot</h1>
             <p class="text-indigo-200 text-sm mt-1 relative z-10">Watch ads & earn real money</p>
         </div>
 
@@ -53,7 +53,7 @@
                     <p class="text-gray-500 text-xs font-medium mb-1">Status</p>
                     <div class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-green-100 text-green-700 text-xs font-bold">
                         <span class="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse"></span>
-                        Active
+                        Adsgram Ready
                     </div>
                 </div>
             </div>
@@ -67,16 +67,17 @@
         </div>
         
         <div class="bg-gray-50 p-4 text-center border-t border-gray-100">
-            <p class="text-xs text-gray-400">Powered by Adsovio SDK v2.0</p>
+            <p class="text-xs text-gray-400">Powered by Adsgram</p>
         </div>
     </div>
 
     <script>
         // --- Configuration ---
         const CONFIG = {
-            rewardAmount: 0.008, // Amount per ad
-            storageKeyPoints: 'adsovio_points',
-            storageKeyBalance: 'adsovio_balance'
+            blockId: "YOUR_BLOCK_ID_HERE", // <--- Adsgram Dashboard থেকে Block ID এখানে বসাও (যেমন: "int-123456")
+            rewardAmount: 0.008, 
+            storageKeyPoints: 'adsgram_points',
+            storageKeyBalance: 'adsgram_balance'
         };
 
         // --- State Management ---
@@ -127,11 +128,7 @@
                 position: 'top-end',
                 showConfirmButton: false,
                 timer: 3000,
-                timerProgressBar: true,
-                didOpen: (toast) => {
-                    toast.addEventListener('mouseenter', Swal.stopTimer)
-                    toast.addEventListener('mouseleave', Swal.resumeTimer)
-                }
+                timerProgressBar: true
             });
 
             Toast.fire({
@@ -140,35 +137,46 @@
             });
         }
 
-        // --- Event Listeners ---
-        ui.btn.addEventListener('click', async () => {
+        // --- Adsgram Logic ---
+        ui.btn.addEventListener('click', () => {
             // Check if SDK is loaded
-            if (typeof window.showAdsovio !== 'function') {
+            if (!window.Adsgram) {
                 Swal.fire({
                     icon: 'error',
                     title: 'SDK Error',
-                    text: 'Ad network is not ready yet. Please check your internet.',
-                    confirmButtonColor: '#4f46e5'
+                    text: 'Adsgram SDK not loaded yet. Check your connection.',
                 });
                 return;
             }
 
             setLoading(true);
 
-            try {
-                await window.showAdsovio(); // Show Ad
-                handleReward(); // Give Reward if successful
-            } catch (error) {
-                console.error("Ad Error:", error);
+            // Initialize Adsgram Controller
+            const AdController = window.Adsgram.init({ blockId: CONFIG.blockId });
+
+            // Show Ad
+            AdController.show().then((result) => {
+                // User watched the ad successfully
+                handleReward();
+            }).catch((result) => {
+                // User skipped or Error occurred
+                console.error("Adsgram Error:", result);
+                
+                // result.done indicates if user finished watching
+                let msg = 'You skipped the ad.';
+                if(result.description) {
+                    msg = result.description;
+                }
+
                 Swal.fire({
                     icon: 'warning',
-                    title: 'Ad Skipped/Failed',
-                    text: 'You must watch the full ad to get rewards.',
+                    title: 'No Reward',
+                    text: msg,
                     confirmButtonColor: '#f59e0b'
                 });
-            } finally {
+            }).finally(() => {
                 setLoading(false);
-            }
+            });
         });
 
         // Initialize
