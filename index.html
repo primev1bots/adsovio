@@ -3,84 +3,133 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ad Viewer</title>
+    <title>Telegram Ad Viewer</title>
     
     <link rel="preconnect" href="https://richinfo.co">
-    
+    <link rel="dns-prefetch" href="https://richinfo.co">
+
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <script src="https://richinfo.co/richpartners/telegram/js/tg-ob.js"></script>
 
     <style>
         body {
-            font-family: sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
             background-color: var(--tg-theme-bg-color, #f5f5f5);
+            color: var(--tg-theme-text-color, #000000);
             display: flex;
+            flex-direction: column;
             align-items: center;
             justify-content: center;
             height: 100vh;
             margin: 0;
         }
 
+        .container {
+            text-align: center;
+            padding: 20px;
+            background: var(--tg-theme-secondary-bg-color, #ffffff);
+            border-radius: 15px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            width: 80%;
+            max-width: 300px;
+        }
+
+        h2 { margin-bottom: 20px; font-size: 1.5rem; }
+
         .ads-btn {
             background-color: #3390ec;
             color: white;
             border: none;
-            padding: 18px 40px;
+            padding: 15px 30px;
             font-size: 18px;
             font-weight: bold;
             border-radius: 12px;
             cursor: pointer;
-            width: 80%;
-            max-width: 300px;
-            transition: opacity 0.2s;
+            width: 100%;
+            transition: all 0.2s;
+            position: relative;
         }
 
-        .ads-btn:active { transform: scale(0.98); }
+        .ads-btn:active { transform: scale(0.95); }
         
+        /* Disable button style when loading */
         .ads-btn:disabled {
             background-color: #b0c4de;
-            cursor: wait;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        #status {
+            margin-top: 15px;
+            font-size: 14px;
+            color: gray;
+            min-height: 20px;
         }
     </style>
 </head>
 <body>
 
-    <button class="ads-btn" id="watchAdBtn">Watch Ads</button>
+    <div class="container">
+        <h2>Earn Points</h2>
+        <button class="ads-btn" id="watchAdBtn">Watch Ads</button>
+        <p id="status">Click button to view ads</p>
+    </div>
 
     <script>
         window.Telegram.WebApp.ready();
         window.Telegram.WebApp.expand();
 
         const adBtn = document.getElementById('watchAdBtn');
+        const statusText = document.getElementById('status');
+        
+        // 2. Controller Global Scope-এ নিয়ে আসা হলো (Memory তে রেডি থাকবে)
         let adController = null;
 
+        // পেজ লোড হওয়ার সাথে সাথেই Controller রেডি করা
         document.addEventListener("DOMContentLoaded", () => {
             if (window.TelegramAdsController) {
                 adController = new TelegramAdsController();
+                console.log("Ad Controller Pre-loaded");
             }
         });
 
-        adBtn.addEventListener('click', async () => {
+        async function showAd() {
+            // বাটন ডিজেবল করা যাতে ইউজার বারবার ক্লিক না করে
             adBtn.disabled = true;
-            adBtn.innerText = "Loading";
+            adBtn.innerText = "Loading...";
+            statusText.innerText = "Connecting to server...";
 
             try {
-                if (!adController) adController = new TelegramAdsController();
+                if (!adController) {
+                    // যদি আগে লোড না হয়ে থাকে, এখন ট্রাই করবে
+                    adController = new TelegramAdsController();
+                }
 
+                // 3. Initialize কল করা
                 await adController.initialize({
-                    pubId: "996418",
-                    appId: "5100",
+                    pubId: "988052",
+                    appId: "4347",
                 });
+                
+                statusText.innerText = "Ad Loaded!";
+                
+                // অ্যাড লোড হয়ে গেলে বাটন আবার নরমাল করা
+                setTimeout(() => {
+                    adBtn.disabled = false;
+                    adBtn.innerText = "Watch Ads";
+                    statusText.innerText = "Watch another ad?";
+                }, 3000); // ৩ সেকেন্ড পর রিসেট হবে
 
             } catch (error) {
-                console.error("Ad failed:", error);
-            }
-
-            setTimeout(() => {
+                console.error("Ad Error:", error);
+                statusText.innerText = "Network slow, try again.";
                 adBtn.disabled = false;
-                adBtn.innerText = "Watch Ads";
-            }, 3000);
-        });
+                adBtn.innerText = "Retry Ads";
+            }
+        }
+
+        adBtn.addEventListener('click', showAd);
+
     </script>
 </body>
 </html>
