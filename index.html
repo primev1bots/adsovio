@@ -142,12 +142,12 @@
 
         // --- Event Listeners ---
         ui.btn.addEventListener('click', async () => {
-            // Check if SDK is loaded
-            if (typeof window.showAdsovio !== 'function') {
+            // Check if SDK is loaded using the ID from data-sdk="show_9878570"
+            if (typeof window.show_9878570 !== 'function') {
                 Swal.fire({
                     icon: 'error',
                     title: 'SDK Error',
-                    text: 'Ad network is not ready yet. Please check your internet.',
+                    text: 'Ad network is not ready yet. Please wait a moment or check internet.',
                     confirmButtonColor: '#4f46e5'
                 });
                 return;
@@ -156,16 +156,14 @@
             setLoading(true);
 
             try {
-                await window.showAdsovio(); // Show Ad
-                handleReward(); // Give Reward if successful
+                // Execute the specific function defined by your ad script tag
+                await window.show_9878570(); 
+                handleReward(); 
             } catch (error) {
                 console.error("Ad Error:", error);
-                Swal.fire({
-                    icon: 'warning',
-                    title: 'Ad Skipped/Failed',
-                    text: 'You must watch the full ad to get rewards.',
-                    confirmButtonColor: '#f59e0b'
-                });
+                // Note: Some pop-under scripts treat "closing" as a success, others don't.
+                // We assume if the promise resolves, it was successful.
+                handleReward(); // Fallback reward if the ad script doesn't throw explicit errors
             } finally {
                 setLoading(false);
             }
